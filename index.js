@@ -3,7 +3,7 @@ require('dotenv').config()
 const cors = require('cors');
 const app = express()
 const port = process.env.PORT || 5000
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // midleware
 app.use(cors())
 app.use(express.json())
@@ -25,15 +25,42 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
      client.connect();
       const taskcollection = client.db('taskManagement').collection('taskdata');
+      app.get('/tasks', async (req, res) => {
+          
+          const results = await taskcollection.find().toArray()
+          
+          res.send(results)
+      })
 app.post('/tasks', async(req,res)=>{
     const tasks = req.body 
-    console.log(tasks);
+
     const result = await taskcollection.insertOne(tasks)
-    console.log(result);
+    
       res.send(result)
     })
 
-      
+      app.delete('/task/:id', async (req, res) => {
+          const id = req.params.id
+          console.log(id);
+          const qurey = { _id: new ObjectId(id) }
+          const results = await taskcollection.deleteOne(qurey)
+          console.log(results, "results");
+          res.send(results)
+      })
+      app.put('/task/:id',async (req, res) => {
+          const id = req.params.id
+          const taskUpdate = req.body 
+    const filter = { _id: new ObjectId(id) }
+    const options = { upsert: true };
+    const updatedDoc ={
+      $set:{
+         title: taskUpdate.title,
+        decription: taskUpdate.decription
+      }
+          }
+          const result = await taskcollection.updateOne(filter, updatedDoc, options)
+    res.send(result)
+      })
       
   } finally {
     // Ensures that the client will close when you finish/error
